@@ -1,50 +1,40 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import Modal from '../Modal/Modal';
 
 import Loader from '../Loader/Loader';
 
-class ImageGalleryItem extends Component {
-  state = {
-    showModal: false,
-    isLoading: false,
+const ImageGalleryItem = ({ webformat, largeImage }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleOpenModal = () => {
+    setShowModal(true);
   };
 
-  handleOpenModal = () => {
-    this.setState({ showModal: true });
+  const handleCloseModal = () => {
+    setShowModal(false);
   };
 
-  handleCloseModal = () => {
-    this.setState({ showModal: false });
+  const handleImageLoad = () => {
+    setIsLoading(false);
   };
 
-  handleImageLoad = () => {
-    this.setState({ isLoading: false });
-  };
-
-  render() {
-    const { showModal, isLoading } = this.state;
-    return (
-      <>
-        <li className="ImageGalleryItem">
-          <img
-            onClick={this.handleOpenModal}
-            className="ImageGalleryItem-image"
-            src={this.props.webformat}
-            alt="tags"
-            loading="lazy"
-            onLoad={this.handleImageLoad}
-          />
-        </li>
-        {showModal && (
-          <Modal
-            src={this.props.largeImage}
-            onCloseModal={this.handleCloseModal}
-          />
-        )}
-        {isLoading && <Loader />}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <li className="ImageGalleryItem">
+        <img
+          onClick={handleOpenModal}
+          className="ImageGalleryItem-image"
+          src={webformat}
+          alt="tags"
+          loading="lazy"
+          onLoad={handleImageLoad}
+        />
+      </li>
+      {showModal && <Modal src={largeImage} onCloseModal={handleCloseModal} />}
+      {isLoading && <Loader />}
+    </>
+  );
+};
 
 export default ImageGalleryItem;
