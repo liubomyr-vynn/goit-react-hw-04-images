@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
 import Button from '../Button/Button';
 import imagesApi from '../../Services/Gallery-api';
@@ -12,21 +12,25 @@ const ImageGallery = ({ inputValue }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalHits, setTotalHits] = useState(0);
+  const [isValidQuery, setIsValidQuery] = useState(true);
+  const galleryRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-
       try {
         const data = await imagesApi.fetchImages(inputValue, 1);
         const newImages = data.hits;
         if (newImages.length === 0) {
+          setIsValidQuery(false);
+          setImages([]);
           throw new Error('No photos found for this query');
         }
         setSearchQuery(inputValue);
-        setCurrentPage(1);
         setImages(newImages);
         setTotalHits(data.totalHits);
+        setIsValidQuery(true);
+        scrollToTop();
       } catch (error) {
         Report.info('No photos found for this query!', '', 'Ok');
         console.log(error);
@@ -36,43 +40,48 @@ const ImageGallery = ({ inputValue }) => {
     };
 
     if (inputValue !== '') {
+      setCurrentPage(1);
+      setIsValidQuery(true);
       fetchData();
     }
   }, [inputValue]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    if (searchQuery !== '' && currentPage > 1) {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const data = await imagesApi.fetchImages(searchQuery, currentPage);
+          const newImages = data.hits;
+          if (newImages.length === 0) {
+            throw new Error('No photos found for this query');
+          }
+          setImages(prevImages => [...prevImages, ...newImages]);
+          setTotalHits(data.totalHits);
+        } catch (error) {
+          Report.info('No photos found for this query!', '', 'Ok');
+          console.log(error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-      try {
-        const data = await imagesApi.fetchImages(inputValue, currentPage);
-        const newImages = data.hits;
-        setImages(prevImages => [...prevImages, ...newImages]);
-      } catch (error) {
-        Report.info('No photos found for this query!', '', 'Ok');
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (currentPage > 1) {
       fetchData();
     }
-  }, [currentPage]);
-
-  useEffect(() => {
-    setImages([]);
-  }, [inputValue]);
+  }, [searchQuery, currentPage]);
 
   const handleLoadMore = () => {
     setCurrentPage(prevPage => prevPage + 1);
   };
 
-  const shouldRenderLoadMore = images.length < totalHits;
+  const shouldRenderLoadMore = isValidQuery && images.length < totalHits;
+
+  const scrollToTop = () => {
+    galleryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
-    <div>
+    <div ref={galleryRef}>
       <ul className="ImageGallery">
         {searchQuery !== '' &&
           images.map(image => (
